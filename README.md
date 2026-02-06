@@ -6,8 +6,17 @@ Unlike server-based analytics, `ccs` works entirely offline — no syncing, no a
 
 ## Install
 
+### Homebrew
+
 ```bash
-# Build from source (requires Go 1.21+)
+brew tap dkd-dobberkau/tap
+brew install ccs
+```
+
+### From Source
+
+```bash
+# Requires Go 1.21+
 make build
 
 # Install to ~/.local/bin

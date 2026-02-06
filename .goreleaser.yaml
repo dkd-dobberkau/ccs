@@ -1,0 +1,53 @@
+version: 2
+
+project_name: ccs
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd/ccs/
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - format: binary
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Os }}-
+      {{- .Arch }}
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+
+brews:
+  - name: ccs
+    repository:
+      owner: dkd-dobberkau
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/dkd-dobberkau/ccs"
+    description: "Claude Code Summary - local usage stats in your terminal"
+    license: "MIT"
+    install: |
+      bin.install "{{ .ArtifactName }}" => "ccs"
+    test: |
+      system "#{bin}/ccs", "version"
