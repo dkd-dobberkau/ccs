@@ -17,6 +17,8 @@ func main() {
 
 	var err error
 	switch command {
+	case "all":
+		err = cmd.All()
 	case "summary":
 		err = cmd.Summary()
 	case "today":

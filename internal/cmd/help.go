@@ -8,6 +8,7 @@ func Help(version string) {
 Usage: ccs [command]
 
 Commands:
+  all              Full report (summary + projects + sessions + tokens)
   summary          Dashboard overview (default)
   today            Today's activity
   week             This week's activity
