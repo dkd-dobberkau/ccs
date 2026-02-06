@@ -1,0 +1,28 @@
+package cmd
+
+import "fmt"
+
+func Help(version string) {
+	fmt.Printf(`ccs %s - Claude Code Summary
+
+Usage: ccs [command]
+
+Commands:
+  summary          Dashboard overview (default)
+  today            Today's activity
+  week             This week's activity
+  month            This month's activity
+  projects         Project ranking by activity
+  sessions         List recent sessions
+  session <id>     Session detail view
+  tokens           Token usage breakdown
+  version          Show version
+  help             Show this help
+
+Flags (sessions):
+  --project=X      Filter by project name
+  -n N             Limit number of results (default: 20)
+
+Data source: ~/.claude/
+`, version)
+}
