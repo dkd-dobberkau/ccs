@@ -59,16 +59,26 @@ func Period(period string) error {
 		}
 	}
 
+	// Load sessions for this period
+	sessions, sessErr := store.ListSessionsAfter(startDate)
+
+	if display.IsJSON() {
+		return periodJSON(period, startStr, totalSessions, totalMessages, totalToolCalls, tokensByModel, days, sessions)
+	}
+	if display.IsMD() {
+		return periodMD(title, startStr, totalSessions, totalMessages, totalToolCalls, tokensByModel, days, sessions)
+	}
+
 	fmt.Println(display.BoldCyan(title))
 	fmt.Printf("Since %s\n\n", startStr)
 
 	display.Box("Activity", func() {
-		fmt.Printf("  Sessions    %s\n", display.BoldWhite(display.FormatNumber(totalSessions)))
-		fmt.Printf("  Messages    %s\n", display.BoldWhite(display.FormatNumber(totalMessages)))
-		fmt.Printf("  Tool calls  %s\n", display.BoldWhite(display.FormatNumber(totalToolCalls)))
+		fmt.Printf("  Sessions    %s\n", display.Bold(display.FormatNumber(totalSessions)))
+		fmt.Printf("  Messages    %s\n", display.Bold(display.FormatNumber(totalMessages)))
+		fmt.Printf("  Tool calls  %s\n", display.Bold(display.FormatNumber(totalToolCalls)))
 		if totalSessions > 0 {
 			avg := totalMessages / totalSessions
-			fmt.Printf("  Avg/session %s msgs\n", display.BoldWhite(display.FormatNumber(avg)))
+			fmt.Printf("  Avg/session %s msgs\n", display.Bold(display.FormatNumber(avg)))
 		}
 	})
 	fmt.Println()
@@ -78,7 +88,7 @@ func Period(period string) error {
 			for model, tokens := range tokensByModel {
 				fmt.Printf("  %-14s  %s\n",
 					display.ModelShort(model),
-					display.BoldWhite(display.FormatTokens(tokens)))
+					display.Bold(display.FormatTokens(tokens)))
 			}
 		})
 		fmt.Println()
@@ -105,9 +115,7 @@ func Period(period string) error {
 		fmt.Println()
 	}
 
-	// Load sessions from indexes for this period
-	sessions, err := store.ListSessionsAfter(startDate)
-	if err == nil && len(sessions) > 0 {
+	if sessErr == nil && len(sessions) > 0 {
 		display.Box("Sessions", func() {
 			limit := 15
 			if len(sessions) < limit {
@@ -134,6 +142,134 @@ func Period(period string) error {
 			}
 		})
 		fmt.Println()
+	}
+
+	return nil
+}
+
+func periodJSON(period, since string, totalSessions, totalMessages, totalToolCalls int, tokensByModel map[string]int, days []store.DailyActivity, sessions []store.SessionEntry) error {
+	shortTokens := make(map[string]int)
+	for model, tokens := range tokensByModel {
+		shortTokens[display.ModelShort(model)] = tokens
+	}
+
+	type jsonDay struct {
+		Date     string `json:"date"`
+		Messages int    `json:"messages"`
+		Sessions int    `json:"sessions"`
+		Tools    int    `json:"toolCalls"`
+	}
+	var jsonDays []jsonDay
+	for _, d := range days {
+		jsonDays = append(jsonDays, jsonDay{
+			Date:     d.Date,
+			Messages: d.MessageCount,
+			Sessions: d.SessionCount,
+			Tools:    d.ToolCallCount,
+		})
+	}
+
+	type jsonSession struct {
+		SessionID   string `json:"sessionId"`
+		Messages    int    `json:"messages"`
+		Created     string `json:"created"`
+		FirstPrompt string `json:"firstPrompt"`
+	}
+	var jsonSessions []jsonSession
+	for _, s := range sessions {
+		jsonSessions = append(jsonSessions, jsonSession{
+			SessionID:   s.SessionID,
+			Messages:    s.MessageCount,
+			Created:     s.Created,
+			FirstPrompt: s.FirstPrompt,
+		})
+	}
+
+	data := map[string]any{
+		"period": period,
+		"since":  since,
+		"activity": map[string]int{
+			"sessions":  totalSessions,
+			"messages":  totalMessages,
+			"toolCalls": totalToolCalls,
+		},
+		"tokens":   shortTokens,
+		"days":     jsonDays,
+		"sessions": jsonSessions,
+	}
+	return OutputJSON(data)
+}
+
+func periodMD(title, since string, totalSessions, totalMessages, totalToolCalls int, tokensByModel map[string]int, days []store.DailyActivity, sessions []store.SessionEntry) error {
+	MDHeader(2, title)
+	fmt.Printf("Since %s\n\n", since)
+
+	MDHeader(3, "Activity")
+	fmt.Printf("- **Sessions:** %s\n", display.FormatNumber(totalSessions))
+	fmt.Printf("- **Messages:** %s\n", display.FormatNumber(totalMessages))
+	fmt.Printf("- **Tool calls:** %s\n", display.FormatNumber(totalToolCalls))
+	if totalSessions > 0 {
+		avg := totalMessages / totalSessions
+		fmt.Printf("- **Avg/session:** %s msgs\n", display.FormatNumber(avg))
+	}
+	fmt.Println()
+
+	if len(tokensByModel) > 0 {
+		MDHeader(3, "Tokens (output)")
+		tHeaders := []string{"Model", "Tokens"}
+		var tRows [][]string
+		for model, tokens := range tokensByModel {
+			tRows = append(tRows, []string{
+				display.ModelShort(model),
+				display.FormatTokens(tokens),
+			})
+		}
+		MDTable(tHeaders, tRows)
+	}
+
+	if len(days) > 1 {
+		MDHeader(3, "Daily Breakdown")
+		dHeaders := []string{"Date", "Messages", "Sessions"}
+		var dRows [][]string
+		for _, d := range days {
+			dRows = append(dRows, []string{
+				d.Date,
+				display.FormatNumber(d.MessageCount),
+				fmt.Sprintf("%d", d.SessionCount),
+			})
+		}
+		MDTable(dHeaders, dRows)
+	}
+
+	if len(sessions) > 0 {
+		MDHeader(3, "Sessions")
+		sHeaders := []string{"ID", "Messages", "Created", "Prompt"}
+		var sRows [][]string
+		limit := 15
+		if len(sessions) < limit {
+			limit = len(sessions)
+		}
+		for i := 0; i < limit; i++ {
+			s := sessions[i]
+			prompt := display.Truncate(s.FirstPrompt, 50)
+			if prompt == "" {
+				prompt = "(no prompt)"
+			}
+			created := ""
+			if t, err := time.Parse(time.RFC3339, s.Created); err == nil {
+				created = display.RelativeTime(t)
+			}
+			sRows = append(sRows, []string{
+				s.SessionID[:8],
+				fmt.Sprintf("%d", s.MessageCount),
+				created,
+				prompt,
+			})
+		}
+		MDTable(sHeaders, sRows)
+		if len(sessions) > limit {
+			fmt.Printf("... and %d more\n\n", len(sessions)-limit)
+		}
 	}
 
 	return nil

@@ -5,11 +5,26 @@ import (
 	"os"
 
 	"github.com/dkd/ccs/internal/cmd"
+	"github.com/dkd/ccs/internal/display"
 )
 
 var version = "dev"
 
 func main() {
+	// Strip --json/--md global flags from args
+	var filtered []string
+	for _, arg := range os.Args[1:] {
+		switch arg {
+		case "--json":
+			display.OutputFormat = "json"
+		case "--md":
+			display.OutputFormat = "md"
+		default:
+			filtered = append(filtered, arg)
+		}
+	}
+	os.Args = append(os.Args[:1], filtered...)
+
 	command := "summary"
 	if len(os.Args) > 1 {
 		command = os.Args[1]

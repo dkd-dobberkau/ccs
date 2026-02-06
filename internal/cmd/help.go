@@ -5,7 +5,7 @@ import "fmt"
 func Help(version string) {
 	fmt.Printf(`ccs %s - Claude Code Summary
 
-Usage: ccs [command]
+Usage: ccs [command] [flags]
 
 Commands:
   all              Full report (summary + projects + sessions + tokens)
@@ -19,6 +19,10 @@ Commands:
   tokens           Token usage breakdown
   version          Show version
   help             Show this help
+
+Global flags:
+  --json           Output as JSON
+  --md             Output as Markdown
 
 Flags (sessions):
   --project=X      Filter by project name

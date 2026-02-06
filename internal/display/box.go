@@ -4,7 +4,7 @@ import "fmt"
 
 // Box prints a titled section with visual framing
 func Box(title string, content func()) {
-	fmt.Printf("┌ %s\n", BoldWhite(title))
+	fmt.Printf("┌ %s\n", Bold(title))
 	content()
 	fmt.Println("└")
 }

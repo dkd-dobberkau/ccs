@@ -20,6 +20,12 @@ const (
 
 var colorEnabled bool
 
+// OutputFormat controls output mode: "" (terminal), "json", or "md"
+var OutputFormat string
+
+func IsJSON() bool { return OutputFormat == "json" }
+func IsMD() bool   { return OutputFormat == "md" }
+
 func init() {
 	colorEnabled = shouldUseColor()
 }
