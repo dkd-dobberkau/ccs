@@ -23,3 +23,16 @@ func LoadStatsCache() (*StatsCache, error) {
 
 	return &stats, nil
 }
+
+// SaveStatsCache writes the stats cache to ~/.claude/stats-cache.json
+func SaveStatsCache(stats *StatsCache) error {
+	path := claude.StatsCache()
+	data, err := json.MarshalIndent(stats, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling stats: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+	return nil
+}

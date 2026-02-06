@@ -17,6 +17,7 @@ Commands:
   sessions         List recent sessions
   session <id>     Session detail view
   tokens           Token usage breakdown
+  refresh          Recompute stats cache from session files
   version          Show version
   help             Show this help
 

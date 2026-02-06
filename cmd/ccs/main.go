@@ -54,6 +54,8 @@ func main() {
 		err = cmd.SessionDetail(os.Args[2])
 	case "tokens":
 		err = cmd.Tokens()
+	case "refresh":
+		err = cmd.Refresh()
 	case "version", "--version", "-v":
 		fmt.Printf("ccs %s\n", version)
 	case "help", "--help", "-h":
